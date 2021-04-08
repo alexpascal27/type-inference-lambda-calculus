@@ -94,14 +94,17 @@ occurs a (At atom) = a == atom
 occurs a (t1 :-> t2) = occurs a t1 || occurs a t2
 
 findAtoms :: Type -> [Atom]
-findAtoms = undefined
-
+-- atom
+findAtoms (At atom) = [atom]
+-- type -> type
+findAtoms (t1 :-> t2) = merge (findAtoms t1) (findAtoms t2)
 
 ------------------------- Type substitution
 
 type Sub = (Atom,Type)
 
 s1 :: Sub
+-- replaces all the a with e
 s1 = ("a", At "e")
 
 s2 :: Sub
