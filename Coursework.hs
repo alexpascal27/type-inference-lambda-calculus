@@ -117,7 +117,10 @@ s3 = ("c", At "a" :-> At "a")
 ------------------------- Assignment 2
 
 sub :: Sub -> Type -> Type
-sub = undefined
+-- atom
+sub (atomToReplace, alpha_i) (At atom) = if atom == atomToReplace then alpha_i else At atom
+-- type -> type
+sub s (t1 :-> t2) = sub s t1 :-> sub s t2
 
 subs :: [Sub] -> Type -> Type
 subs = undefined
