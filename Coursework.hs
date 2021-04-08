@@ -118,7 +118,7 @@ s3 = ("c", At "a" :-> At "a")
 
 sub :: Sub -> Type -> Type
 -- atom
-sub (atomToReplace, alpha_i) (At atom) = if atom == atomToReplace then alpha_i else At atom
+sub (atomToReplace, replacementAtom) (At atom) = if atom == atomToReplace then replacementAtom else At atom
 -- type -> type
 sub s (t1 :-> t2) = sub s t1 :-> sub s t2
 
@@ -158,7 +158,8 @@ st1 = ([],[u1,u2])
 ------------------------- Assignment 3
 
 sub_u :: Sub -> [Upair] -> [Upair]
-sub_u  = undefined
+sub_u  _ [] = []
+sub_u s ((t1, t2) : xs) = ((sub s t1), (sub s t2)) : sub_u s xs
 
 
 step :: State -> State
