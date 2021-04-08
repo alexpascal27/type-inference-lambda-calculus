@@ -88,7 +88,10 @@ t3 = At "a" :-> At "c" :-> At "c"
 ------------------------- Assignment 1
 
 occurs :: Atom -> Type -> Bool
-occurs = undefined
+-- atom
+occurs a (At atom) = a == atom
+  -- type -> type
+occurs a (t1 :-> t2) = occurs a t1 || occurs a t2
 
 findAtoms :: Type -> [Atom]
 findAtoms = undefined
