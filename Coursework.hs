@@ -123,7 +123,15 @@ sub (atomToReplace, alpha_i) (At atom) = if atom == atomToReplace then alpha_i e
 sub s (t1 :-> t2) = sub s t1 :-> sub s t2
 
 subs :: [Sub] -> Type -> Type
-subs = undefined
+-- non empty sub series
+subs xs t = reverseSubs (reverse xs) t
+  where 
+    reverseSubs :: [Sub] -> Type -> Type
+    -- empty sub series
+    reverseSubs [] t = t
+    -- non empty sub series
+    reverseSubs (x : xs) t = reverseSubs xs (sub x t)
+
 
 
 ------------------------- Unification
