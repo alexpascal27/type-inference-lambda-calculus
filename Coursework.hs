@@ -172,14 +172,19 @@ step (ss, (t1, t2) : us)
   where 
     bAndC :: State -> State
     -- case b: α ↔ τ
-    bAndC (ss, (At alpha, tau) : us) = if alpha `occurs` tau then error ("atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
+    bAndC (ss, (At alpha, tau) : us) = if alpha `occurs` tau then error ("Step: atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
     -- case b: τ ↔ α
-    bAndC (ss, (tau, At alpha) : us) = if alpha `occurs` tau then error ("atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
+    bAndC (ss, (tau, At alpha) : us) = if alpha `occurs` tau then error ("Step: atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
     -- case c: (σ 1 → σ 2 ) ↔ (τ 1 → τ 2 ) : return (S, {σ 1 ↔ τ 1 , σ 2 ↔ τ 2 } ∪ U )
     bAndC (ss, (sigma1 :-> sigma2, tau1 :-> tau2) : us) = (ss, (sigma1, tau1) : (sigma2, tau2) : us)
 
 unify :: [Upair] -> [Sub]
-unify = undefined
+unify us = unificationAlgorithm ([], us)
+  where
+    unificationAlgorithm :: State -> [Sub]
+    unificationAlgorithm (ss, []) = ss
+    unificationAlgorithm (ss, us) = unificationAlgorithm (step (ss, us))
+
 
 
 ------------------------- Assignment 4
