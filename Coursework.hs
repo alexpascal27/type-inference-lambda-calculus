@@ -163,8 +163,20 @@ sub_u s ((t1, t2) : xs) = ((sub s t1), (sub s t2)) : sub_u s xs
 
 
 step :: State -> State
-step = undefined
-
+step (ss, []) = (ss, [])
+step (ss, (t1, t2) : us) 
+  -- case a: α ↔ α : return (S, U)
+  | t1 == t2 = (ss, us)
+  -- case b or c
+  | otherwise  = bAndC(ss, (t1, t2) : us) 
+  where 
+    bAndC :: State -> State
+    -- case b: α ↔ τ
+    bAndC (ss, (At alpha, tau) : us) = if alpha `occurs` tau then error ("atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
+    -- case b: τ ↔ α
+    bAndC (ss, (tau, At alpha) : us) = if alpha `occurs` tau then error ("atom " ++ alpha ++ " occurs in " ++ show tau) else ((alpha, tau) : ss, sub_u (alpha, tau) us)
+    -- case c: (σ 1 → σ 2 ) ↔ (τ 1 → τ 2 ) : return (S, {σ 1 ↔ τ 1 , σ 2 ↔ τ 2 } ∪ U )
+    bAndC (ss, (sigma1 :-> sigma2, tau1 :-> tau2) : us) = (ss, (sigma1, tau1) : (sigma2, tau2) : us)
 
 unify :: [Upair] -> [Sub]
 unify = undefined
