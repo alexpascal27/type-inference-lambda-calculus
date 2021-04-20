@@ -237,7 +237,9 @@ subs_jdg :: [Sub] -> Judgement -> Judgement
 subs_jdg ss (c, term, _type) = (subs_ctx ss c, term, subs ss _type)
 
 subs_der :: [Sub] -> Derivation -> Derivation
-subs_der = undefined
+subs_der ss (Axiom j) = Axiom (subs_jdg ss j)
+subs_der ss (Abstraction j d) = Abstraction (subs_jdg ss j) (subs_der ss d)
+subs_der ss (Application j d1 d2) = Application (subs_jdg ss j) (subs_der ss d1) ( subs_der ss d2)
 
 
 ------------------------- Typesetting derivations
