@@ -178,6 +178,7 @@ step (ss, (t1, t2) : us)
     -- case c: (σ 1 → σ 2 ) ↔ (τ 1 → τ 2 ) : return (S, {σ 1 ↔ τ 1 , σ 2 ↔ τ 2 } ∪ U )
     bAndC (ss, (sigma1 :-> sigma2, tau1 :-> tau2) : us) = (ss, (sigma1, tau1) : (sigma2, tau2) : us)
 
+
 unify :: [Upair] -> [Sub]
 unify us = unificationAlgorithm ([], us)
   where
@@ -189,14 +190,20 @@ unify us = unificationAlgorithm ([], us)
 
 ------------------------- Assignment 4
 
-type Context   = ()
-type Judgement = ()
+type AssignedVariable = (Var,Type)
+type Context   = [AssignedVariable]
+type Judgement = (Context, Term, Type)
 
-data Derivation
+data Derivation = 
+    Axiom Judgement
+    | Abstraction Judgement Derivation
+    | Application Judgement Derivation Derivation
+
+
 
 n1 = Apply (Lambda "x" (Variable "x")) (Variable "y")
 
-{-
+
 d1 = Application ([("y",At "a")], n1 , At "a") (
        Abstraction ([("y",At "a")],Lambda "x" (Variable "x"),At "a" :-> At "a") (
          Axiom ([("x",At "a"),("y",At "a")],Variable "x",At "a")
@@ -214,11 +221,13 @@ d2 = Application ([("y",At "b")],Apply (Lambda "x" (Apply (Variable "x") (Variab
        Abstraction ([("y",At "b")],Lambda "z" (Variable "z"),At "h") (
          Axiom ([("z",At "i"),("y",At "b")],Variable "z",At "j")
      ) )
--}
+
+
 
 conclusion :: Derivation -> Judgement
-conclusion = undefined
-
+conclusion (Axiom j) = j
+conclusion (Abstraction j _) = j
+conclusion (Application j _ _) = j
 
 subs_ctx :: [Sub] -> Context -> Context
 subs_ctx = undefined
@@ -232,7 +241,7 @@ subs_der = undefined
 
 ------------------------- Typesetting derivations
 
-{-
+
 instance Show Derivation where
   show d = unlines (reverse strs)
     where
@@ -274,7 +283,6 @@ instance Show Derivation where
         | length d1 > length d2 = ( l1 , m1+r1+2+l2+m2 , r2 , [ x ++ "  " ++ y | (x,y) <- zip d1 (extend (l2+m2+r2) d2)])
         | otherwise             = ( l1 , m1+r1+2+l2+m2 , r2 , [ x ++ "  " ++ y | (x,y) <- zip (extend (l1+m1+r1) d1) d2])
 
--}
 
 ------------------------- Assignment 5
 
