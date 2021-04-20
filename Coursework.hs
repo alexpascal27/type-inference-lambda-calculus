@@ -230,10 +230,11 @@ conclusion (Abstraction j _) = j
 conclusion (Application j _ _) = j
 
 subs_ctx :: [Sub] -> Context -> Context
-subs_ctx = undefined
+subs_ctx _ [] = []
+subs_ctx ss ((v, t) : cs) =  (v, (subs ss t)) : subs_ctx ss cs
 
 subs_jdg :: [Sub] -> Judgement -> Judgement
-subs_jdg = undefined
+subs_jdg ss (c, term, _type) = (subs_ctx ss c, term, subs ss _type)
 
 subs_der :: [Sub] -> Derivation -> Derivation
 subs_der = undefined
