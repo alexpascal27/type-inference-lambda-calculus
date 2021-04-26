@@ -202,6 +202,8 @@ data Derivation =
 
 n1 = Apply (Lambda "x" (Variable "x")) (Variable "y")
 
+n2 = Lambda "x" (Apply(Variable "x") (Variable "y"))  
+
 
 d1 = Application ([("y",At "a")], n1 , At "a") (
        Abstraction ([("y",At "a")],Lambda "x" (Variable "x"),At "a" :-> At "a") (
@@ -292,7 +294,7 @@ mergeContext :: Context -> Context -> Context
 mergeContext xs [] = xs
 mergeContext [] ys = ys
 mergeContext ((x1, x2):xs) ((y1, y2):ys)
-    | x1 == y1 && x2 == y2   = (x1, x2) : mergeContext xs ys
+    | x1 == y1   = (x1, x2) : mergeContext xs ys
     | x1 <= y1   = (x1,x2) : mergeContext xs ((y1, y2):ys)
     | otherwise = (y1, y2) : mergeContext ((x1, x2):xs) ys
 
@@ -300,8 +302,12 @@ mapFree :: [Var] -> [(Var, Type)]
 mapFree [] = []
 mapFree (x : xs) = (x, At "") : mapFree xs
 
+mapAtoms :: [Var] -> [Atom] -> [(Var, Type)]
+mapAtoms [] _ = []
+mapAtoms (var: vars) (atom : atoms) = (var, At atom) : mapAtoms vars atoms
+
 derive0 :: Term -> Derivation
-derive0 term = aux(mapFree (free term), term, At "")
+derive0 term = aux (mapFree (free term), term, At "")
   where
     aux :: Judgement -> Derivation
     aux (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At "")], Variable x, t)
@@ -310,10 +316,13 @@ derive0 term = aux(mapFree (free term), term, At "")
 
 
 derive1 :: Term -> Derivation
-derive1 = undefined
+derive1 term = aux (tail (tail atoms)) (mapAtoms (free term) (tail atoms), term, At (head atoms))
   where
     aux :: [Atom] -> Judgement -> Derivation
-    aux = undefined
+    aux atomList (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At (head (tail(tail atomList))))], Variable x, t)
+    aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) (tail (tail atomList)), Lambda x n, t) (aux (tail atomList) (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, n, At (head (tail atomList))))
+    aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) (tail (tail atomList)), Apply n m, t) (aux (tail atomList) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head atomList))) (aux (tail (tail atomList)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (tail atomList))))
+
 
 
 upairs :: Derivation -> [Upair]
