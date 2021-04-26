@@ -190,8 +190,7 @@ unify us = unificationAlgorithm ([], us)
 
 ------------------------- Assignment 4
 
-type AssignedVariable = (Var,Type)
-type Context   = [AssignedVariable]
+type Context   = [(Var,Type)]
 type Judgement = (Context, Term, Type)
 
 data Derivation = 
@@ -289,12 +288,25 @@ instance Show Derivation where
 
 ------------------------- Assignment 5
 
+mergeContext :: Context -> Context -> Context
+mergeContext xs [] = xs
+mergeContext [] ys = ys
+mergeContext ((x1, x2):xs) ((y1, y2):ys)
+    | x1 == y1 && x2 == y2   = (x1, x2) : mergeContext xs ys
+    | x1 <= y1   = (x1,x2) : mergeContext xs ((y1, y2):ys)
+    | otherwise = (y1, y2) : mergeContext ((x1, x2):xs) ys
+
+mapFree :: [Var] -> [(Var, Type)]
+mapFree [] = []
+mapFree (x : xs) = (x, At "") : mapFree xs
 
 derive0 :: Term -> Derivation
-derive0 = undefined
+derive0 term = aux(mapFree (free term), term, At "")
   where
     aux :: Judgement -> Derivation
-    aux = undefined
+    aux (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At "")], Variable x, t)
+    aux (c, Lambda x n, t) = Abstraction (c `mergeContext` mapFree (free (Lambda x n)), Lambda x n, t) (aux (c `mergeContext` mapFree (free (Lambda x n)), n, t))
+    aux (c, Apply n m, t) = Application (c `mergeContext` mapFree (free (Apply n m)), Apply n m, t) (aux (c `mergeContext` mapFree (free (Apply n m)), n, t)) (aux (c `mergeContext` mapFree (free (Apply n m)), m, t))
 
 
 derive1 :: Term -> Derivation
