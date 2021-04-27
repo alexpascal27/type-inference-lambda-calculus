@@ -351,5 +351,8 @@ upairs d = aux d []
 
 
 derive :: Term -> Derivation
-derive = undefined
+derive t = aux (derive1 t)
+  where
+    aux :: Derivation -> Derivation
+    aux der = subs_der (unify (upairs der)) der
 
