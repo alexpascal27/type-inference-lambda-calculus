@@ -57,7 +57,6 @@ free (Variable x) = [x]
 free (Lambda x n) = free n `minus` [x]
 free (Apply  n m) = free n `merge` free m
 
-
 ------------------------- Types
 
 infixr 5 :->
@@ -324,9 +323,31 @@ derive1 term = aux (tail (tail atoms)) (mapAtoms (free term) (tail atoms), term,
     aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) (tail (tail atomList)), Apply n m, t) (aux (tail atomList) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head atomList))) (aux (tail (tail atomList)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (tail atomList))))
 
 
+findTypeOfVar :: Context -> Var -> Type
+findTypeOfVar [] _ = At ""
+findTypeOfVar ((v, t):xs) varToFind = if v == varToFind then t else findTypeOfVar xs varToFind
+
+getTypeOfVarFromDerivation :: Derivation -> Var -> Type
+getTypeOfVarFromDerivation d = findTypeOfVar (get1st(conclusion d))
+  where
+    get1st (x, _, _) = x
+
+getTypeFromDerivation :: Derivation -> Type
+getTypeFromDerivation d = get3rd (conclusion d)
+  where
+    get3rd (_,_,x) = x
+
 
 upairs :: Derivation -> [Upair]
-upairs = undefined
+upairs d = aux d []
+  where
+    aux :: Derivation -> [Upair] -> [Upair]
+    -- variable
+    aux (Axiom (c, Variable v, t)) upairList = upairList ++ [(t, findTypeOfVar c v)]
+    -- abstraction
+    aux (Abstraction (c, Lambda x n, t) der) upairList = upairList ++ [(t, getTypeOfVarFromDerivation der x :-> getTypeFromDerivation der)] ++ aux der []
+    -- application
+    aux (Application (c, Apply n m, t) der1 der2) upairList = upairList ++ [(getTypeFromDerivation der1, getTypeFromDerivation der2 :-> t)] ++ aux der1 [] ++ aux der2 []
 
 
 derive :: Term -> Derivation
