@@ -309,19 +309,27 @@ derive0 :: Term -> Derivation
 derive0 term = aux (mapFree (free term), term, At "")
   where
     aux :: Judgement -> Derivation
-    aux (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At "")], Variable x, t)
-    aux (c, Lambda x n, t) = Abstraction (c `mergeContext` mapFree (free (Lambda x n)), Lambda x n, t) (aux (c `mergeContext` mapFree (free (Lambda x n)), n, t))
-    aux (c, Apply n m, t) = Application (c `mergeContext` mapFree (free (Apply n m)), Apply n m, t) (aux (c `mergeContext` mapFree (free (Apply n m)), n, t)) (aux (c `mergeContext` mapFree (free (Apply n m)), m, t))
+    aux (c, Variable x, t) =  Axiom ([(x, At "")] `mergeContext` c, Variable x, t)
+    aux (c, Lambda x n, t) = Abstraction (mapFree (free (Lambda x n)) `mergeContext` c, Lambda x n, t) (aux (c `mergeContext` mapFree (free (Lambda x n)), n, t))
+    aux (c, Apply n m, t) = Application (mapFree (free (Apply n m)) `mergeContext` c , Apply n m, t) (aux (c `mergeContext` mapFree (free (Apply n m)), n, t)) (aux (c `mergeContext` mapFree (free (Apply n m)), m, t))
 
 
 derive1 :: Term -> Derivation
-derive1 term = aux (tail (tail atoms)) (mapAtoms (free term) (tail atoms), term, At (head atoms))
+derive1 term = aux (skipXElements (tail atoms) (length (free term))) (mapAtoms (free term) (tail atoms), term, At (head atoms))
   where
-    aux :: [Atom] -> Judgement -> Derivation
-    aux atomList (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At (head (tail(tail atomList))))], Variable x, t)
-    aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) (tail (tail atomList)), Lambda x n, t) (aux (tail atomList) (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, n, At (head (tail atomList))))
-    aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) (tail (tail atomList)), Apply n m, t) (aux (tail atomList) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head atomList))) (aux (tail (tail atomList)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (tail atomList))))
 
+    aux :: [Atom] -> Judgement -> Derivation
+    aux atomList (c, Variable x, t) =  Axiom ([(x, At (head (tail atomList)))] `mergeContext` c, Variable x, t)
+    aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, Lambda x n, t) (aux (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t)) + 1)) (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t))))))
+    aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) atomList, Apply n m, t) (aux (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 2)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)))))) (aux (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 3)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 1)))))
+    
+    getNumberOfAtomsUsedInContext :: [Atom] -> Judgement -> Int 
+    getNumberOfAtomsUsedInContext atomList (c, term, _) = length (c `mergeContext` mapAtoms (free term) atomList) - length c
+
+    skipXElements :: [Atom] -> Int -> [Atom]
+    skipXElements [] _ = []
+    skipXElements xs 0 = xs
+    skipXElements (x : xs) n = skipXElements xs (n-1)
 
 findTypeOfVar :: Context -> Var -> Type
 findTypeOfVar [] _ = At ""
