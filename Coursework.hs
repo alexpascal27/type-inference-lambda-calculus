@@ -319,8 +319,8 @@ derive1 term = aux (skipXElements (tail atoms) (length (free term))) (mapAtoms (
   where
 
     aux :: [Atom] -> Judgement -> Derivation
-    aux atomList (c, Variable x, t) =  Axiom ([(x, At (head  atomList))] `mergeContext` c, Variable x, At (head (tail atomList)))
-    aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, Lambda x n, t) (aux (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) + 2)) (c `mergeContext` mapAtoms [x] atomList `mergeContext` mapAtoms (free (Lambda x n)) (tail atomList), n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) + 1)))))
+    aux atomList (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At (head  atomList))], Variable x, At (head (tail atomList)))
+    aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, Lambda x n, t) (boundVariableReplace atomList (c, Lambda x n, t))
     aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) atomList, Apply n m, t) (aux (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t) + 2)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)))))) (aux (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 3)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 1)))))
     
     getNumberOfAtomsUsedInContext :: [Atom] -> Judgement -> Int 
@@ -330,6 +330,24 @@ derive1 term = aux (skipXElements (tail atoms) (length (free term))) (mapAtoms (
     skipXElements [] _ = []
     skipXElements xs 0 = xs
     skipXElements (x : xs) n = skipXElements xs (n-1)
+
+    isLambdaVariableBound :: Term -> [Var] -> Bool
+    isLambdaVariableBound _ [] = False
+    isLambdaVariableBound (Lambda x n) (var: vars) = if x == var then True else isLambdaVariableBound (Lambda x n) vars
+
+    -- before context(initially empty), after context , varible to minus
+    minusVarFromContext :: Context -> Context -> Var -> Context
+    minusVarFromContext _ [] _ = []
+    minusVarFromContext pre_cs ((var, t) : cs) v = if var == v then pre_cs ++ cs else minusVarFromContext (pre_cs ++ [(var, t)]) cs v
+
+    -- if lambda term then this function is called: we care if variable is bound
+    boundVariableReplace :: [Atom] -> Judgement -> Derivation
+    boundVariableReplace atomList (c, Lambda x n, t)
+    -- if bound then remove the variable from context
+      | isLambdaVariableBound (Lambda x n) (free n) = aux (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) + 1)) (minusVarFromContext [] c x `mergeContext` mapAtoms [x] atomList `mergeContext` mapAtoms (free (Lambda x n)) (tail atomList), n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) ))))
+      | otherwise = aux (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) + 2)) (c `mergeContext` mapAtoms [x] atomList `mergeContext` mapAtoms (free (Lambda x n)) (tail atomList), n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Lambda x n, t) + 1))))
+
+    
 
 findTypeOfVar :: Context -> Var -> Type
 findTypeOfVar [] _ = At ""
