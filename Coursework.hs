@@ -338,7 +338,7 @@ derive1 term = aux (skipXElements (tail atoms) (length (free term))) (mapAtoms (
     -- before context(initially empty), after context , varible to minus
     minusVarFromContext :: Context -> Context -> Var -> Context
     minusVarFromContext _ [] _ = []
-    minusVarFromContext pre_cs ((var, t) : cs) v = if var == v then pre_cs ++ cs else pre_cs ++ [(var, t)] ++ minusVarFromContext (pre_cs ++ [(var, t)]) cs v
+    minusVarFromContext pre_cs ((var, t) : cs) v = if var == v then pre_cs `mergeContext` cs else pre_cs `mergeContext` [(var, t)] `mergeContext` minusVarFromContext (pre_cs `mergeContext` [(var, t)]) cs v
 
     -- if lambda term then this function is called: we care if variable is bound
     boundVariableReplace :: [Atom] -> Judgement -> Derivation
