@@ -203,6 +203,7 @@ n1 = Apply (Lambda "x" (Variable "x")) (Variable "y")
 
 n2 = Lambda "x" (Apply(Variable "x") (Variable "y"))  
 
+n4 = Lambda "x" (Lambda "y" (Apply (Apply (Variable "z") (Variable "z") ) (Variable "z")))
 
 d1 = Application ([("y",At "a")], n1 , At "a") (
        Abstraction ([("y",At "a")],Lambda "x" (Variable "x"),At "a" :-> At "a") (
@@ -319,12 +320,24 @@ derive1 term = aux (skipXElements (tail atoms) (length (free term))) (mapAtoms (
   where
 
     aux :: [Atom] -> Judgement -> Derivation
-    aux atomList (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At (head  atomList))], Variable x, At (head (tail atomList)))
+    aux atomList (c, Variable x, t) =  Axiom (c `mergeContext` [(x, At (head (tail atomList)))], Variable x, At (head atomList))
     aux atomList (c, Lambda x n, t) = Abstraction (c `mergeContext` mapAtoms (free (Lambda x n)) atomList, Lambda x n, t) (boundVariableReplace atomList (c, Lambda x n, t))
-    aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) atomList, Apply n m, t) (aux (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t) + 2)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)))))) (aux (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 3)) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (skipXElements atomList ((getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)) + 1)))))
+    aux atomList (c, Apply n m, t) = Application (c `mergeContext` mapAtoms (free (Apply n m)) atomList, Apply n m, t) (aux (oddAtomList (tail (tail atomList)) 0) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, n, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t)))))) (aux (evenAtomList (tail (tail atomList)) 0) (c `mergeContext` mapAtoms (free (Apply n m)) atomList, m, At (head (skipXElements atomList (getNumberOfAtomsUsedInContext atomList (c, Apply n m, t) + 1)))))
     
     getNumberOfAtomsUsedInContext :: [Atom] -> Judgement -> Int 
     getNumberOfAtomsUsedInContext atomList (c, term, _) = length (c `mergeContext` mapAtoms (free term) atomList) - length c
+
+    oddAtomList :: [Atom] -> Integer -> [Atom]
+    oddAtomList [] _ = []
+    oddAtomList (x : xs) n
+      | odd n = x : oddAtomList xs (n + 1)
+      | otherwise  = oddAtomList xs (n + 1)
+
+    evenAtomList :: [Atom] -> Integer -> [Atom]
+    evenAtomList [] _ = []
+    evenAtomList (x : xs) n
+      | even n = x : evenAtomList xs (n + 1)
+      | otherwise  = evenAtomList xs (n + 1)
 
     skipXElements :: [Atom] -> Int -> [Atom]
     skipXElements [] _ = []
